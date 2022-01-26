@@ -8,19 +8,33 @@ const io = new Server(server);
 const port = process.env.SOCKET_SERVER_PORT
 let emitSocket;
 const clientIO = require('socket.io-client');
-const { cryptoMap } = require('./utils/constants/crypto');
-const clientSocket = clientIO.connect(`${process.env.SOCKET_HOST}:${process.env.SOCKET_PORT}`, {reconnect: true});
+const RedisUtilClass = require('./utils/redisUtils');
+const clientSocket = clientIO.connect(`${process.env.SOCKET_HOST}:${process.env.SOCKET_PORT}`, { reconnect: true });
 
-clientSocket.on('connect', function () {
+clientSocket.on('connect', async function () {
   console.log('Connected to the indexer socket!');
-  cryptoMap.forEach(ct => {
-    clientSocket.on(ct, function(from, msg){
-          console.log(` ${ct} received message ===> ${from}`)
-          if(emitSocket){
-            console.log(emitSocket)
-          emitSocket.emit(ct, from, msg);}
-      })
-  })
+
+  let channelsCreated = false
+
+  const topTokens = await RedisUtilClass.getKeys(`toptoken_*`)
+  while(!channelsCreated){
+    if (topTokens.data) {
+  
+      for (let data of topTokens.data) {
+        const tokenSymbol = await RedisUtilClass.getValue(data)
+        const tS = tokenSymbol.data
+        if (tS) {
+          clientSocket.on(tS, function (from, msg) {
+            console.log(` ${tS} received message ===> ${from}`)
+            if (emitSocket) {
+              emitSocket.emit(tS, from, msg);
+            }
+          })
+        }
+      }
+      channelsCreated = true
+    }
+  }
 });
 app.get('/', (req, res) => {
   res.send('Hello World!')
@@ -31,5 +45,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(port, () => {
-    console.log(`listening on *:${port}`);
+  console.log(`listening on *:${port}`);
 });
