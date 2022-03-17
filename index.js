@@ -1,5 +1,6 @@
 const express = require('express')
 const app = express();
+const cors = require('cors');
 require('dotenv').config();
 const https = require("https");
 const fs = require('fs')
@@ -20,9 +21,15 @@ const clientIO = require('socket.io-client');
 const RedisUtilClass = require('./utils/redisUtils');
 const clientSocket = clientIO.connect(`${process.env.SOCKET_HOST}:${process.env.SOCKET_PORT}`, { reconnect: true,  "rejectUnauthorized": false });
 
-const sslServer = http.createServer(app);
+app.use(cors())
 
-const io = new Server();
+const sslServer = https.createServer(options, app);
+
+const io = new Server({
+  cors: {
+    origin: '*',
+  }
+});
 
 const socketCreated = {}
 
