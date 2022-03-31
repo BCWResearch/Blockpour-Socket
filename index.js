@@ -30,14 +30,11 @@ const io = new Server({
   }
 });
 
-const socketCreated = {}
 
 clientSocket.on('connect', async function () {
   console.log('Connected to the indexer socket! ');
 
     clientSocket.on(allCryptoSocket, function (from, msg) {
-      const temp = JSON.parse(msg)
-
       if (emitSockets.length) {
         emitSockets.forEach(emitSocket => {
           emitSocket.emit(allCryptoSocket,from, msg );
@@ -47,6 +44,11 @@ clientSocket.on('connect', async function () {
   
   clientSocket.on("disconnect", (reason) => {
     console.log(reason); // "ping timeout"
+    clientSocket.disconnect()
+    emitSockets.forEach(emitSocket => {
+      emitSocket.disconnect()
+    })
+    emitSockets = []
   });
 });
 
